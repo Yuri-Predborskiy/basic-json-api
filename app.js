@@ -2,7 +2,6 @@ require('dotenv').config();
 const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
-// mongoose is already defined elsewhere, outside of the current code
 const mongoose = require('mongoose');
 
 const userSchema = mongoose.Schema({
@@ -22,14 +21,8 @@ const purchaseSchema = mongoose.Schema({
     album: {type: mongoose.Schema.Types.ObjectId, ref: 'Album'}
 });
 const Purchase = mongoose.model('Purchase', purchaseSchema);
-mongoose.connect(process.env.MONGODB_URL, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-});
 
 app.use(bodyParser.json());
-app.listen(3000);
-console.log('listening to port 3000');
 
 // app.get('/', (req, res) => {
 //     console.log('request to root');
@@ -130,4 +123,32 @@ app.post('/purchases', (req, res) => {
         });
 });
 
-module.exports = app;
+/**
+ * Function that starts express server only after a database connection is established. Handles promise rejections
+ * @returns {Promise<void>}
+ */
+async function start() {
+    // handle promise rejection in case we can't connect to database
+    await mongoose.connect(
+        process.env.MONGODB_URL,
+        {
+            useNewUrlParser: true,
+            useUnifiedTopology: true,
+            serverSelectionTimeoutMS: process.env.MONGODB_TIMEOUT
+        })
+        .then(() => {
+            console.log('Database connected!');
+        })
+        .catch((error) => {
+            console.error('Error on start: ' + error.stack);
+            process.exit(1);
+        })
+    ;
+
+    // database connection established - start server
+    app.listen(process.env.PORT, () => {
+        console.log(`App listening at http://localhost:${process.env.PORT}`)
+    });
+}
+
+start().then();
