@@ -24,103 +24,44 @@ const Purchase = mongoose.model('Purchase', purchaseSchema);
 
 app.use(bodyParser.json());
 
-// app.get('/', (req, res) => {
-//     console.log('request to root');
-//     return res.json({data: 'hello world!'});
-// });
-
 // get all albums
-app.get('/albums', (req, res) => {
-    const albums = Album.find({})
-        .then(data => {
-            res.json({data});
-        })
-        .catch(err => {  // template for errors
-            console.error(err);
-            res.status(500).json({err});
-        });
+app.get('/albums', async (req, res) => {
+    const albums = await Album.find({});
+    return res.json({data: albums});
 });
 
 // get album by ID
-app.get('/albums/:id', (req, res) => {
-    Album.findById(req.params.id)
-        .then(data => {
-            res.json({data});
-        })
-        .catch(err => {  // template for errors
-            console.error(err);
-            res.status(500).json({err});
-        });
+app.get('/albums/:id', async (req, res) => {
+    const album = await Album.findById(req.params.id);
+    return res.json({data: album});
 });
 
 // create a new album
-app.post('/albums', (req, res) => {
+app.post('/albums', async (req, res) => {
     const album = new Album(req.body);
-    album.save()
-        .then(data => {
-            res.json({data});
-        })
-        .catch(err => {  // template for errors
-            console.error(err);
-            res.status(500).json({err});
-        });
+    const result = await album.save();
+    return res.json({data: result});
 });
 
-// update album by id, replace all fields with those from request
-// note: put means replace all fields, if not present, fields will be deleted
-app.put('/albums/:id', (req, res) => {
-    // req.body should exist
-    Album.findByIdAndUpdate(req.params.id, req.body, {new: true})
-        .then(data => {
-            res.json({data});
-        })
-        .catch(err => {  // template for errors
-            console.error(err);
-            res.status(500).json({err});
-        });
+// update album by id, replace all fields with those from request, fields not present will be set to null
+app.put('/albums/:id', async (req, res) => {
+    const album = await Album.findByIdAndUpdate(req.params.id, req.body, {new: true});
+    return res.json({data: album});
 });
 
 // get album by ID
-app.delete('/albums/:id', (req, res) => {
-    Album.findByIdAndDelete(req.params.id)
-        .then(() => {
-            res.status(204).send();
-        })
-        .catch(err => {  // template for errors
-            console.error(err);
-            res.status(500).json({err});
-        });
+app.delete('/albums/:id', async (req, res) => {
+    await Album.findByIdAndDelete(req.params.id);
+    return res.status(204).end();
 });
 
 // create a new purchase
-app.post('/purchases', (req, res) => {
-    if (!req.body.user) {
-        return res.status(400).json({err: 'user field is required!'})
-    }
-    if (!req.body.album) {
-        return res.status(400).json({err: 'album field is required!'})
-    }
+app.post('/purchases', async (req, res) => {
+    // validate request
     const purchase = new Purchase(req.body);
-    purchase.save()
-        .then(data => {
-            console.log('saved data is', data);
-            Purchase.findById(data._id)
-                .populate('album')
-                //         .populate({path: 'user'})
-                //         .execPopulate()
-                .then(data => {
-                    console.log('populated data', data);
-                    return res.json({data});
-                })
-                .catch(err => {
-                    console.error(err);
-                    return res.status(500).json({err});
-                });
-        })
-        .catch(err => {  // template for errors
-            console.error(err);
-            return res.status(500).json({err});
-        });
+    const purchaseRecord = await purchase.save();
+    const purchasePopulated = await Purchase.findById(purchaseRecord._id).populate('album').populate('user');
+    return res.json({purchasePopulated});
 });
 
 /**
