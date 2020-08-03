@@ -110,18 +110,34 @@ describe("server", function() {
                     });
             });
         });
+
+        describe("GET /albums", function() {
+            it ("should get all albums in db (empty array)", function(done){
+                chai.request(app)
+                    .get('/albums')
+                    .end((err, res) => {
+                        expect(res.status).to.equal(200);
+                        expect(res.body.data).to.be.an('array').that.is.empty;
+                        done();
+                    });
+            });
+        });
+
     });
 
     describe('Test /purchases routes', function() {
         before(function () {
-            chai.request(app)
-                .post('/albums')
-                .send({title: "Appetite for Destruction", performer: "Guns N\' Roses", cost: 20})
-                .end((err, res) => {
-                    albumId = res.body.data._id;
-                    expect(res.status).to.equal(200);
-                    expect(res.body.data.title).to.equal("Appetite for Destruction");
-                });
+            return new Promise((resolve) => {
+                chai.request(app)
+                    .post('/albums')
+                    .send({title: "Appetite for Destruction", performer: "Guns N\' Roses", cost: 20})
+                    .end((err, res) => {
+                        albumId = res.body.data._id;
+                        expect(res.status).to.equal(200);
+                        expect(res.body.data.title).to.equal("Appetite for Destruction");
+                        resolve();
+                    });
+            });
         });
 
         describe("POST /purchases", function() {
@@ -130,9 +146,8 @@ describe("server", function() {
                     .post('/purchases')
                     .send({album: albumId, user: '41224d776a326fb40f000001'})
                     .end((err, res) => {
-                        console.log(err)
                         expect(res.status).to.equal(200);
-                        expect(res.body.data.title).to.equal("Appetite for Destruction");
+                        expect(res.body.data.album.title).to.equal("Appetite for Destruction");
                         done();
                     });
             });
