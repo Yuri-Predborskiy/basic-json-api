@@ -1,5 +1,6 @@
 require('dotenv').config();
 const express = require('express');
+require('express-async-errors');
 const app = express();
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
@@ -60,9 +61,18 @@ app.post('/purchases', async (req, res) => {
     // validate request
     const purchase = new Purchase(req.body);
     const purchaseRecord = await purchase.save();
-    const purchasePopulated = await Purchase.findById(purchaseRecord._id).populate('album').populate('user');
-    return res.json({purchasePopulated});
+    const purchasePopulated = await Purchase
+        .findById(purchaseRecord._id)
+        .populate('album')
+        .populate('user')
+    ;
+    return res.json({data: purchasePopulated});
 });
+
+app.use(function (error, req, res, next) {
+    console.error(error.stack);
+    res.status(500).json({error: error.message});
+})
 
 /**
  * Function that starts express server only after a database connection is established. Handles promise rejections
@@ -75,7 +85,8 @@ async function start() {
         {
             useNewUrlParser: true,
             useUnifiedTopology: true,
-            serverSelectionTimeoutMS: process.env.MONGODB_TIMEOUT
+            serverSelectionTimeoutMS: process.env.MONGODB_TIMEOUT,
+            useFindAndModify: false
         })
         .then(() => {
             console.log('Database connected!');
@@ -93,3 +104,5 @@ async function start() {
 }
 
 start().then();
+
+module.exports = app;
