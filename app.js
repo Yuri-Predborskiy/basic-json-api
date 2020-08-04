@@ -41,26 +41,26 @@ app.get('/albums/:id', async (req, res) => {
 });
 
 // create a new album
-app.post('/albums', async (req, res) => {
+app.post('/albums', authMiddleware, async (req, res) => {
     const album = new Album(req.body);
     const albumRecord = await album.save();
     return res.json({data: albumRecord});
 });
 
 // update album by id, replace all fields with those from request, fields not present will be set to null
-app.put('/albums/:id', async (req, res) => {
+app.put('/albums/:id', authMiddleware, async (req, res) => {
     const album = await Album.findByIdAndUpdate(req.params.id, req.body, {new: true});
     return res.json({data: album});
 });
 
 // get album by ID
-app.delete('/albums/:id', async (req, res) => {
+app.delete('/albums/:id', authMiddleware, async (req, res) => {
     await Album.findByIdAndDelete(req.params.id);
     return res.status(204).end();
 });
 
 // create a new purchase
-app.post('/purchases', async (req, res) => {
+app.post('/purchases', authMiddleware, async (req, res) => {
     // validate request
     const purchase = new Purchase(req.body);
     const purchaseRecord = await purchase.save();
@@ -102,7 +102,7 @@ app.post('/logout', async (req, res) => {
  */
 app.use(function (error, req, res, next) {
     console.error(error.stack);
-    res.status(500).json({error: error.message});
+    return res.status(500).json({error: error.message});
 });
 
 /**
@@ -133,7 +133,7 @@ function authMiddleware(req, res, next) {
     // note: REST requires not having server-size user session data
     // current solution is made for a very specific requirement
     if (!loggedInUserSet.has(authHeader)) {
-        res.status(401).end();
+        return res.status(401).end();
     }
     return next();
 }
