@@ -92,7 +92,7 @@ app.post('/login', async (req, res) => {
 
 app.post('/logout', async (req, res) => {
     const auth = req.headers.authorization;
-    res.set('authorization', '');
+    // res.removeHeader('authorization'); // header is not added by default
     loggedInUserSet.delete(auth);
     return res.status(204).end();
 });
@@ -112,7 +112,7 @@ app.use(function (error, req, res, next) {
 function generateAuthorizationString() {
     // todo: replace with a unique, random token or use 3rd party library to handle tokens, like JWT
     function generateString() {
-        return ('' + Math.floor(Math.random() * Math.pow(10, 16))).padStart(16, '0');
+        return ('Bearer ' + Math.floor(Math.random() * Math.pow(10, 16))).padStart(16, '0');
     }
     let string = generateString();
     while (loggedInUserSet.has(string)) {
